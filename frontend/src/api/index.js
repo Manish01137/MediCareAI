@@ -57,6 +57,14 @@ export const reportsApi = {
   review:        (id, data) => api.post(`/reports/${id}/review`, data).then(r => r.data),
   patientStats:  () => api.get('/reports/stats/patient').then(r => r.data),
   doctorStats:   () => api.get('/reports/stats/doctor').then(r => r.data),
+  trends:        () => api.get('/reports/trends').then(r => r.data),
+}
+
+// ── Chat (patient Q&A over their own reports) ────────────────
+export const chatApi = {
+  ask:     (question) => api.post('/chat/ask', { question }).then(r => r.data),
+  history: () => api.get('/chat/history').then(r => r.data),
+  clear:   () => api.delete('/chat/history').then(r => r.data),
 }
 
 // ── Messages ──────────────────────────────────────────────────

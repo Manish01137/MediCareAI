@@ -5,7 +5,7 @@ from pathlib import Path
 from app.config import settings
 from app.models.database import create_tables, SessionLocal, User
 from app.services.auth import hash_password
-from app.routers import auth, reports, messages, users
+from app.routers import auth, reports, messages, users, chat
 
 app = FastAPI(
     title="MediClear AI API",
@@ -27,6 +27,7 @@ app.include_router(auth.router,     prefix="/api")
 app.include_router(reports.router,  prefix="/api")
 app.include_router(messages.router, prefix="/api")
 app.include_router(users.router,    prefix="/api")
+app.include_router(chat.router,     prefix="/api")
 
 Path(settings.UPLOAD_DIR).mkdir(exist_ok=True)
 

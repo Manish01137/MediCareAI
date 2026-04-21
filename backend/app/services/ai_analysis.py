@@ -299,3 +299,45 @@ def analyze_report(file_path: str, file_name: str) -> dict:
         except Exception as e:
             print(f"OpenAI error: {e}")
     return content_analysis(text, file_name, file_path)
+
+
+# (low, high, reason) — breach either bound triggers auto-flag. None means "don't check that side".
+CRITICAL_THRESHOLDS = {
+    "Hemoglobin":        (7.0,   None,      "Severe anemia (Hemoglobin <7 g/dL)"),
+    "Platelets":         (50000, 1_000_000, "Critical platelet count"),
+    "WBC":               (2000,  30000,     "Critical WBC level"),
+    "Fasting Glucose":   (50,    300,       "Extreme glucose value"),
+    "HbA1c":             (None,  9.0,       "Uncontrolled diabetes (HbA1c ≥9%)"),
+    "LDL":               (None,  190,       "Severely elevated LDL (>190)"),
+    "Total Cholesterol": (None,  300,       "Severely elevated total cholesterol (>300)"),
+    "Triglycerides":     (None,  500,       "Markedly elevated triglycerides (>500)"),
+    "TSH":               (None,  10.0,      "Marked TSH elevation (>10)"),
+    "Free T4":           (0.4,   None,      "Severely low Free T4"),
+    "ALT (SGPT)":        (None,  120,       "ALT >3× upper limit"),
+    "AST (SGOT)":        (None,  120,       "AST >3× upper limit"),
+    "Total Bilirubin":   (None,  3.0,       "Marked hyperbilirubinemia (>3)"),
+    "Albumin":           (2.5,   None,      "Severely low albumin"),
+}
+
+def check_urgency(values: dict) -> tuple[bool, str]:
+    """Return (is_critical, reason_summary) given parsed lab values."""
+    if not values:
+        return False, ""
+    reasons = []
+    for name, rule in CRITICAL_THRESHOLDS.items():
+        lo, hi, msg = rule
+        v = values.get(name)
+        if not v:
+            continue
+        try:
+            val = float(v.get("val"))
+        except (TypeError, ValueError):
+            continue
+        if lo is not None and val < lo:
+            reasons.append(msg)
+            continue
+        if hi is not None and val > hi:
+            reasons.append(msg)
+    if reasons:
+        return True, "; ".join(reasons[:3])
+    return False, ""

@@ -7,6 +7,7 @@ const LINKS = [
   { path:'/patient/upload',   label:'Upload Report' },
   { path:'/patient/reports',  label:'My Reports' },
   { path:'/patient/analytics',label:'Analytics' },
+  { path:'/patient/chat',     label:'Ask AI' },
   { path:'/patient/messages', label:'Messages' },
 ]
 

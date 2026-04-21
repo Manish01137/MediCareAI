@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     DATABASE_URL: str = "sqlite:///./mediclear.db"
     OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 10
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"

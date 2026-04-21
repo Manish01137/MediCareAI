@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.database import get_db, User, Report, ReportStatus
 from app.models.schemas import ReportOut, ReviewRequest, PatientStats, DoctorStats
 from app.services.auth import get_current_user, require_doctor
-from app.services.ai_analysis import analyze_report
+from app.services.ai_analysis import analyze_report, check_urgency
 from app.config import settings
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -35,11 +35,17 @@ def bg_analyze(report_id: str, file_path: str, file_name: str, db_url: str):
         res = analyze_report(file_path, file_name)
         r = db.query(Report).filter(Report.id == report_id).first()
         if r:
-            r.report_type  = res.get("reportType", file_name)
-            r.ai_summary   = res.get("summary", "")
+            values = res.get("values", {})
+            r.report_type    = res.get("reportType", file_name)
+            r.ai_summary     = res.get("summary", "")
             r.ai_explanation = res.get("explanation", "")
-            r.ai_tips      = json.dumps(res.get("tips", []))
-            r.lab_values   = json.dumps(res.get("values", {}))
+            r.ai_tips        = json.dumps(res.get("tips", []))
+            r.lab_values     = json.dumps(values)
+            is_critical, reason = check_urgency(values)
+            if is_critical:
+                r.is_flagged  = True
+                r.flag_reason = f"Auto-flagged: {reason}"
+                r.status      = ReportStatus.flagged
             db.commit()
     except Exception as e:
         print(f"bg_analyze error: {e}")
@@ -102,6 +108,49 @@ def doctor_stats(db: Session = Depends(get_db), dr: User = Depends(require_docto
                        pending_reviews=sum(1 for r in rs if r.status.value=="pending"),
                        reviewed_today=sum(1 for r in rs if r.reviewed_at and r.reviewed_at.date()==today and r.reviewed_by_id==dr.id),
                        flagged_reports=sum(1 for r in rs if r.is_flagged), unread_messages=unread)
+
+@router.get("/trends")
+def trends(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Per-metric time series across all of the patient's reports."""
+    rs = db.query(Report).filter(Report.patient_id == user.id).order_by(Report.uploaded_at.asc()).all()
+    series: dict = {}
+    for r in rs:
+        if not r.lab_values:
+            continue
+        try:
+            values = json.loads(r.lab_values)
+        except Exception:
+            continue
+        for name, v in values.items():
+            try:
+                val = float(v.get("val"))
+            except (TypeError, ValueError):
+                continue
+            series.setdefault(name, []).append({
+                "val": val,
+                "unit": v.get("unit"),
+                "min": v.get("min"),
+                "max": v.get("max"),
+                "status": v.get("status"),
+                "uploaded_at": r.uploaded_at.isoformat(),
+                "report_id": r.id,
+            })
+    out = {}
+    for name, points in series.items():
+        first, last = points[0]["val"], points[-1]["val"]
+        delta = round(last - first, 2)
+        direction = "flat" if abs(delta) < 0.001 else ("up" if delta > 0 else "down")
+        out[name] = {
+            "unit": points[-1].get("unit"),
+            "min": points[-1].get("min"),
+            "max": points[-1].get("max"),
+            "points": points,
+            "delta": delta,
+            "direction": direction,
+            "latest": points[-1],
+            "count": len(points),
+        }
+    return out
 
 @router.get("/{report_id}", response_model=ReportOut)
 def get_report(report_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):

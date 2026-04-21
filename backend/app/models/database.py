@@ -81,5 +81,13 @@ class Message(Base):
     sender   = relationship("User", foreign_keys=[sender_id],   back_populates="messages_sent")
     receiver = relationship("User", foreign_keys=[receiver_id], back_populates="messages_received")
 
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id         = Column(String, primary_key=True, default=gen_id)
+    user_id    = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    role       = Column(String, nullable=False)
+    content    = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 def create_tables():
     Base.metadata.create_all(bind=engine)

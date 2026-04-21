@@ -12,6 +12,7 @@ import UploadReport    from './pages/patient/Upload'
 import MyReports       from './pages/patient/MyReports'
 import Analytics       from './pages/patient/Analytics'
 import PatientMessages from './pages/patient/Messages'
+import PatientChat     from './pages/patient/Chat'
 
 import DoctorLayout   from './pages/doctor/Layout'
 import DoctorOverview from './pages/doctor/Overview'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="upload"     element={<UploadReport />} />
           <Route path="reports"    element={<MyReports />} />
           <Route path="analytics"  element={<Analytics />} />
+          <Route path="chat"       element={<PatientChat />} />
           <Route path="messages"   element={<PatientMessages />} />
         </Route>
 
