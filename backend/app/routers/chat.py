@@ -214,11 +214,18 @@ def _general_medical_answer(q_low: str) -> str | None:
     return None
 
 def _rule_based_answer(q: str, reports) -> str:
-    if not reports:
-        return ("I don't see any reports yet. Upload a lab report (PDF or image) and I can "
-                "help explain your values, show trends, and give tips.")
-
     q_low = q.lower().strip()
+
+    # Users with no reports can still ask general medical questions.
+    if not reports:
+        kb = _general_medical_answer(q_low)
+        if kb:
+            return kb
+        return ("I don't see any reports yet. Upload a lab report (PDF or image) and I can "
+                "help explain your values, show trends, and give tips. "
+                "You can also ask general medical questions like 'what is diabetes?' "
+                "or 'normal blood pressure range?'.")
+
     latest = reports[0]
     abnormal = _latest_abnormal(reports)
     n = len(reports)
