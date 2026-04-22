@@ -4,7 +4,14 @@ from datetime import datetime
 import uuid, enum
 from app.config import settings
 
-engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {})
+# Render's managed Postgres exposes the URL with the legacy "postgres://" scheme,
+# which SQLAlchemy 2.x rejects — rewrite to "postgresql://".
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgres://"):
+    _db_url = "postgresql://" + _db_url[len("postgres://"):]
+
+_connect_args = {"check_same_thread": False} if "sqlite" in _db_url else {}
+engine = create_engine(_db_url, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

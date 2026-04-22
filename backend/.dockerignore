@@ -1,0 +1,33 @@
+# Virtualenvs
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Secrets / env (Render provides via dashboard)
+.env
+.env.*
+!.env.example
+
+# Local data — must not ship with the image
+uploads/
+*.sqlite
+*.sqlite3
+mediclear.db
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
